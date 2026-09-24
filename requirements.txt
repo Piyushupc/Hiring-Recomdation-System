@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+pandas
+scikit-learn
+joblib
+pydantic
+python-multipart
+pdfplumber
+python-docx

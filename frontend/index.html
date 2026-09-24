@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hiring Recommendation Tool</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --panel-border: #262b36;
+    --text: #e8eaed;
+    --muted: #8a91a1;
+    --accent: #6c8cff;
+    --accent-2: #35d0a1;
+    --danger: #ff6c6c;
+    --warn: #ffb020;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  .wrap {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 32px 20px 60px;
+  }
+  header {
+    margin-bottom: 28px;
+  }
+  header h1 {
+    font-size: 1.6rem;
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+  }
+  header p {
+    color: var(--muted);
+    margin: 0;
+    font-size: 0.95rem;
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  @media (min-width: 900px) {
+    .layout { grid-template-columns: 400px 1fr; }
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 20px;
+  }
+  .card h2 {
+    font-size: 1rem;
+    margin: 0 0 16px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+  label {
+    display: block;
+    font-size: 0.85rem;
+    margin: 14px 0 6px;
+    color: var(--muted);
+  }
+  label:first-of-type { margin-top: 0; }
+  input {
+    width: 100%;
+    padding: 10px 12px;
+    background: #0d0f13;
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 0.9rem;
+  }
+  input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  input::placeholder { color: #4b5162; }
+  .hint {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  button {
+    width: 100%;
+    margin-top: 22px;
+    padding: 12px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  button:hover { opacity: 0.9; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button.secondary { background: #262b36; }
+  button.interview { background: var(--accent-2); color: #06231a; }
+  button.reject { background: var(--danger); color: #2b0d0d; }
+
+  .upload-row {
+    display: flex;
+    gap: 8px;
+  }
+  .upload-row input[type="file"] {
+    flex: 1;
+    padding: 8px;
+    font-size: 0.8rem;
+  }
+  .upload-row button {
+    width: auto;
+    margin-top: 0;
+    padding: 10px 14px;
+    white-space: nowrap;
+  }
+  .parse-status {
+    font-size: 0.78rem;
+    margin-top: 8px;
+    min-height: 1.1em;
+  }
+  .parse-status.ok { color: var(--accent-2); }
+  .parse-status.warn { color: var(--warn); }
+  .parse-status.err { color: var(--danger); }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--panel-border);
+    margin: 20px 0;
+  }
+
+  .results-empty {
+    color: var(--muted);
+    text-align: center;
+    padding: 60px 20px;
+    font-size: 0.9rem;
+  }
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+  .score-panel {
+    background: #0d0f13;
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .score-panel h3 {
+    margin: 0 0 12px;
+    font-size: 0.85rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .final-score {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 14px;
+  }
+  .metric-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--panel-border);
+  }
+  .metric-row:last-child { border-bottom: none; }
+  .metric-label { color: var(--muted); }
+  .metric-na { color: #4b5162; font-style: italic; }
+  .excluded-note {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 10px;
+    line-height: 1.4;
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-left: 6px;
+  }
+  .badge.high { background: rgba(53, 208, 161, 0.15); color: var(--accent-2); }
+  .badge.medium { background: rgba(255, 176, 32, 0.15); color: var(--warn); }
+  .badge.low { background: rgba(255, 108, 108, 0.15); color: var(--danger); }
+
+  .divergence {
+    background: rgba(255, 176, 32, 0.08);
+    border: 1px solid rgba(255, 176, 32, 0.25);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 0.85rem;
+    color: var(--warn);
+    margin-top: 4px;
+  }
+  .error-box {
+    background: rgba(255, 108, 108, 0.1);
+    border: 1px solid rgba(255, 108, 108, 0.3);
+    color: var(--danger);
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+  }
+  .verdict {
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .verdict.pass {
+    background: rgba(53, 208, 161, 0.1);
+    border: 1px solid rgba(53, 208, 161, 0.3);
+  }
+  .verdict.fail {
+    background: rgba(255, 108, 108, 0.1);
+    border: 1px solid rgba(255, 108, 108, 0.3);
+  }
+  .verdict .overall {
+    font-size: 1.8rem;
+    font-weight: 700;
+  }
+  .verdict .label {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .action-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .action-row button { margin-top: 0; }
+  .email-status {
+    font-size: 0.8rem;
+    margin-top: 10px;
+    text-align: center;
+    min-height: 1.1em;
+  }
+  .api-url-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  .api-url-row input { flex: 1; }
+  .api-url-row span {
+    font-size: 0.75rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Hiring Recommendation Tool</h1>
+    <p>Upload a resume to auto-fill candidate details, review the score, then send an interview or rejection email.</p>
+  </header>
+
+  <div class="api-url-row">
+    <span>API base URL:</span>
+    <input id="apiUrl" value="http://localhost:8000" />
+  </div>
+
+  <div class="layout">
+    <div class="card">
+      <h2>Resume</h2>
+      <div class="upload-row">
+        <input id="resumeFile" type="file" accept=".pdf,.docx,.txt" />
+        <button id="parseBtn">Parse</button>
+      </div>
+      <div class="hint">PDF, DOCX, or TXT. Fields it can't find (e.g. salary) are left blank instead of guessed — they simply won't count toward the score.</div>
+      <div id="parseStatus" class="parse-status"></div>
+
+      <hr class="divider" />
+
+      <h2>Candidate Details</h2>
+
+      <label>Name</label>
+      <input id="candidateName" placeholder="Auto-filled from resume, or type manually" />
+
+      <label>Email</label>
+      <input id="candidateEmail" type="email" placeholder="Auto-filled from resume, or type manually" />
+
+      <label>Job title (optional, used in emails)</label>
+      <input id="jobTitle" placeholder="e.g. Backend Engineer" />
+
+      <label>Job durations (months, comma-separated)</label>
+      <input id="jobDurations" value="12, 18, 24" />
+      <div class="hint">e.g. lengths of previous roles</div>
+
+      <label>Number of companies worked at</label>
+      <input id="companies" type="number" value="3" />
+
+      <label>Total experience (years) <span class="hint">— optional</span></label>
+      <input id="experience" type="number" step="0.1" placeholder="Leave blank if unknown" />
+
+      <label>Current salary <span class="hint">— optional</span></label>
+      <input id="currentSalary" type="number" step="0.1" placeholder="Leave blank if unknown" />
+
+      <label>Expected salary <span class="hint">— optional</span></label>
+      <input id="expectedSalary" type="number" step="0.1" placeholder="Leave blank if unknown" />
+
+      <label>Candidate skills (comma-separated)</label>
+      <input id="candidateSkills" value="Python, FastAPI, PostgreSQL" />
+
+      <label>Company required skills (comma-separated)</label>
+      <input id="companySkills" value="Python, FastAPI, Git, Docker" />
+
+      <button id="submitBtn">Calculate Recommendation</button>
+    </div>
+
+    <div class="card">
+      <h2>Results</h2>
+      <div id="results">
+        <div class="results-empty">Fill in the candidate details (or parse a resume) and click "Calculate Recommendation" to see scores.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const submitBtn = document.getElementById('submitBtn');
+const resultsEl = document.getElementById('results');
+const parseBtn = document.getElementById('parseBtn');
+const parseStatusEl = document.getElementById('parseStatus');
+
+function apiBase() {
+  return document.getElementById('apiUrl').value.replace(/\/$/, '');
+}
+
+function parseList(str) {
+  return str.split(',').map(s => s.trim()).filter(Boolean);
+}
+
+function parseNumberList(str) {
+  return parseList(str).map(Number);
+}
+
+// Returns null (not 0, not NaN) for an empty optional numeric field, so
+// the backend can tell "not provided" apart from "provided as 0".
+function optionalNumber(id) {
+  const raw = document.getElementById(id).value;
+  if (raw === '' || raw === null || raw === undefined) return null;
+  const n = Number(raw);
+  return Number.isNaN(n) ? null : n;
+}
+
+function badgeClass(rec) {
+  if (!rec) return 'medium';
+  const r = rec.toLowerCase();
+  if (r.includes('very high') || r === 'high') return 'high';
+  if (r === 'medium') return 'medium';
+  return 'low';
+}
+
+function metricRow(label, value, badge) {
+  const valueHtml = (value === null || value === undefined)
+    ? '<span class="metric-na">not available</span>'
+    : `${value}${badge ? `<span class="badge ${badgeClass(badge)}">${badge}</span>` : ''}`;
+  return `<div class="metric-row"><span class="metric-label">${label}</span><span>${valueHtml}</span></div>`;
+}
+
+function renderPanel(title, data) {
+  const finalScoreHtml = (data.final_score === null || data.final_score === undefined)
+    ? '<span class="metric-na">n/a</span>'
+    : data.final_score;
+  let html = `
+    <div class="score-panel">
+      <h3>${title}</h3>
+      <div class="final-score">${finalScoreHtml}</div>
+      ${metricRow('Stability', data.stability)}
+      ${metricRow('Long-term probability', data.long_term_probability, data.long_term_recommendation)}
+      ${metricRow('Monetary motivation', data.monetary)}
+      ${metricRow('Cultural fit', data.culture)}
+  `;
+  if (data.excluded_components && data.excluded_components.length) {
+    html += `<div class="excluded-note">Not counted toward this score (missing data): ${data.excluded_components.join('; ')}</div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+let lastResult = null; // holds the most recent /score response for the email buttons
+
+parseBtn.addEventListener('click', async () => {
+  const fileInput = document.getElementById('resumeFile');
+  const file = fileInput.files[0];
+  if (!file) {
+    parseStatusEl.className = 'parse-status warn';
+    parseStatusEl.textContent = 'Choose a resume file first.';
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  parseBtn.disabled = true;
+  parseBtn.textContent = 'Parsing...';
+  parseStatusEl.className = 'parse-status';
+  parseStatusEl.textContent = '';
+
+  try {
+    const res = await fetch(`${apiBase()}/parse-resume`, { method: 'POST', body: formData });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || `Request failed with status ${res.status}`);
+    }
+    const data = await res.json();
+
+    if (data.name) document.getElementById('candidateName').value = data.name;
+    if (data.email) document.getElementById('candidateEmail').value = data.email;
+    if (data.experience !== null) document.getElementById('experience').value = data.experience;
+    if (data.current_salary !== null) document.getElementById('currentSalary').value = data.current_salary;
+    if (data.expected_salary !== null) document.getElementById('expectedSalary').value = data.expected_salary;
+    if (data.skills && data.skills.length) document.getElementById('candidateSkills').value = data.skills.join(', ');
+
+    const missing = Object.entries(data.fields_found)
+      .filter(([key, found]) => !found)
+      .map(([key]) => key);
+
+    if (missing.length) {
+      parseStatusEl.className = 'parse-status warn';
+      parseStatusEl.textContent = `Filled in what was found. Not found in the resume: ${missing.join(', ')} — these won't count against the score.`;
+    } else {
+      parseStatusEl.className = 'parse-status ok';
+      parseStatusEl.textContent = 'Resume parsed and fields filled in.';
+    }
+  } catch (err) {
+    parseStatusEl.className = 'parse-status err';
+    parseStatusEl.textContent = `Error: ${err.message}`;
+  } finally {
+    parseBtn.disabled = false;
+    parseBtn.textContent = 'Parse';
+  }
+});
+
+async function sendOutcomeEmail(emailType, btn) {
+  const toEmail = document.getElementById('candidateEmail').value.trim();
+  const candidateName = document.getElementById('candidateName').value.trim() || 'Candidate';
+  const jobTitle = document.getElementById('jobTitle').value.trim();
+  const statusEl = document.getElementById('emailStatus');
+
+  if (!toEmail) {
+    statusEl.style.color = 'var(--danger)';
+    statusEl.textContent = 'Add a candidate email above before sending.';
+    return;
+  }
+
+  const payload = {
+    to_email: toEmail,
+    candidate_name: candidateName,
+    email_type: emailType,
+    job_title: jobTitle || null,
+  };
+
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = 'Sending...';
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = '';
+
+  try {
+    const res = await fetch(`${apiBase()}/send-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || `Request failed with status ${res.status}`);
+    }
+    statusEl.style.color = 'var(--accent-2)';
+    statusEl.textContent = `${emailType === 'interview' ? 'Interview' : 'Rejection'} email sent to ${toEmail}.`;
+  } catch (err) {
+    statusEl.style.color = 'var(--danger)';
+    statusEl.textContent = `Error: ${err.message}`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+
+function renderVerdictAndActions(data) {
+  const pass = data.meets_criteria;
+  let html = `
+    <div class="verdict ${pass ? 'pass' : 'fail'}">
+      <div class="overall">${data.overall_score !== null ? data.overall_score : 'n/a'}</div>
+      <div class="label">Overall score (threshold: ${data.pass_threshold}) — ${pass ? 'Meets criteria' : 'Below criteria'}</div>
+      <div class="action-row">
+  `;
+  if (pass) {
+    html += `<button class="interview" id="interviewBtn">Send Interview Mail</button>`;
+  } else {
+    html += `<button class="reject" id="rejectBtn">Send Rejection Mail</button>`;
+  }
+  html += `
+      </div>
+      <div class="email-status" id="emailStatus"></div>
+    </div>
+  `;
+  return html;
+}
+
+submitBtn.addEventListener('click', async () => {
+  const payload = {
+    name: document.getElementById('candidateName').value.trim() || null,
+    email: document.getElementById('candidateEmail').value.trim() || null,
+    job_title: document.getElementById('jobTitle').value.trim() || null,
+    job_durations: parseNumberList(document.getElementById('jobDurations').value),
+    companies: Number(document.getElementById('companies').value),
+    experience: optionalNumber('experience'),
+    current_salary: optionalNumber('currentSalary'),
+    expected_salary: optionalNumber('expectedSalary'),
+    candidate_skills: parseList(document.getElementById('candidateSkills').value),
+    company_skills: parseList(document.getElementById('companySkills').value)
+  };
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Calculating...';
+  resultsEl.innerHTML = '<div class="results-empty">Loading...</div>';
+
+  try {
+    const res = await fetch(`${apiBase()}/score`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || `Request failed with status ${res.status}`);
+    }
+
+    const data = await res.json();
+    lastResult = data;
+
+    let html = renderVerdictAndActions(data);
+
+    html += '<div class="compare-grid">';
+    html += renderPanel('Rule-Based Engine', data.rule_based);
+    html += renderPanel('ML Model (RandomForest)', data.ml_based);
+    html += '</div>';
+
+    if (data.rule_based.final_score !== null && data.ml_based.final_score !== null) {
+      const diff = Math.abs(data.rule_based.final_score - data.ml_based.final_score);
+      if (diff >= 15) {
+        html += `<div class="divergence">⚠ The two engines disagree noticeably (${diff.toFixed(1)} pt difference in final score). The rule-based engine uses fixed thresholds; the ML model learned patterns from the training data — worth reviewing both before deciding.</div>`;
+      }
+    }
+
+    resultsEl.innerHTML = html;
+
+    const interviewBtn = document.getElementById('interviewBtn');
+    if (interviewBtn) interviewBtn.addEventListener('click', () => sendOutcomeEmail('interview', interviewBtn));
+    const rejectBtn = document.getElementById('rejectBtn');
+    if (rejectBtn) rejectBtn.addEventListener('click', () => sendOutcomeEmail('rejection', rejectBtn));
+  } catch (err) {
+    resultsEl.innerHTML = `<div class="error-box">Error: ${err.message}. Make sure the API is running and the URL above is correct (CORS is enabled on the API for local use).</div>`;
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Calculate Recommendation';
+  }
+});
+</script>
+</body>
+</html>
