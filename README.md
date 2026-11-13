@@ -1,100 +1,49 @@
 # Hiring Recommendation System
 
-A FastAPI application that parses candidate resumes, extracts selected fields, calculates configurable recommendation scores, and supports interview or rejection email workflows.
+A FastAPI-based prototype with an HTML/JavaScript interface for parsing candidate resumes, calculating configurable recommendation signals, and supporting recruiter review.
 
-> **Important:** This is a decision-support prototype, not an autonomous hiring decision system. Resume parsing is heuristic-based and requires recruiter review. The included long-term prediction model is trained on synthetic/example data and is not validated for real hiring outcomes.
+## Current capabilities
 
-## Features
+- Accepts resume uploads in PDF, DOCX, and TXT formats.
+- Extracts available candidate details such as name, email, experience, salary information, and skills.
+- Calculates component scores and excludes components when required source data is unavailable rather than treating missing values as zero.
+- Compares the resulting score with a configurable threshold.
+- Supports recruiter-triggered interview or rejection email actions through SMTP.
 
-- Accept PDF, DOCX, and TXT resumes.
-- Extract candidate details such as name, email, phone, experience, salary fields, and skills where available.
-- Return missing fields as unavailable rather than silently treating them as zero.
-- Calculate rule-based and ML-based score breakdowns.
-- Expose a configurable pass threshold.
-- Send interview or rejection emails through SMTP when configured.
-- Provide interactive API documentation through FastAPI.
+## Technology
 
-## Technology stack
-
-- Python
-- FastAPI and Uvicorn
-- Pydantic
-- scikit-learn and joblib
-- pdfplumber and python-docx
-- SMTP
-
-## Repository structure
-
-```text
-Models/
-  cultural_fit.py
-  monetary_motivation.py
-  stability_score.py
-  long_term_prediction.py
-  ml_long_term_predictor.py
-  recommendation_engine.py
-  resume_parser.py
-services/
-  email_service.py
-frontend/
-  index.html
-app.py
-requirements.txt
-.env.example
-```
+Python, FastAPI, Pydantic, HTML/CSS/JavaScript, PDF/DOCX text extraction libraries, Pandas, scikit-learn/joblib, and SMTP. See the source tree and `requirements.txt` for exact dependencies.
 
 ## Run locally
 
-```bash
-python -m venv .venv
-# Windows: .venv\Scripts\Activate.ps1
-# macOS/Linux: source .venv/bin/activate
-pip install -r requirements.txt
-```
+1. Clone the repository and create a Python virtual environment.
+2. Install dependencies from `requirements.txt`.
+3. Configure environment-specific email and application settings.
+4. Start the FastAPI application using `app.py`.
+5. Open the frontend served or referenced by the application.
 
-Copy `.env.example` to `.env` and configure SMTP settings only if email delivery is needed. Never commit real credentials.
+Do not commit real credentials. Use environment variables or a local ignored environment file for secrets.
 
-Start the API:
+## Recommendation limitations and responsible use
 
-```bash
-uvicorn app:app --reload --port 8000
-```
+This is decision-support software, not an automated hiring authority. Resume extraction is heuristic/regex-oriented, and the long-term prediction component includes a model trained using synthetic data. Scores are not objective measures of a person's ability or future performance.
 
-- Health check: http://localhost:8000/health
-- Swagger UI: http://localhost:8000/docs
+- Make job-related skills and verified experience the primary criteria.
+- Do not use proxies such as cultural fit, salary expectations, employment gaps, or inferred stability as automatic rejection criteria.
+- Keep a qualified human reviewer in the decision loop.
+- Test for disparate impact and document the purpose, provenance, and limitations of each feature.
+- Give candidates a way to correct inaccurate extracted information.
 
-Open `frontend/index.html` in a browser for the simple frontend. Its API base URL may need adjustment if the backend runs elsewhere.
+## Security and reliability
 
-## API overview
+Before production use, add strict upload-size limits, content-type and file-signature validation, safe parsing/timeouts, and controlled error handling. Restrict CORS to trusted frontend origins. Protect recruiter actions with authentication and authorization, validate email settings, and add audit logs. Minimize resume retention and define access controls.
 
-| Method | Endpoint | Purpose |
-|---|---|---|
-| GET | `/` | Basic service status |
-| GET | `/health` | Health check |
-| POST | `/parse-resume` | Parse an uploaded resume |
-| POST | `/score` | Generate score breakdowns |
-| POST | `/send-email` | Send an interview or rejection email |
+## Suggested engineering improvements
 
-See Swagger UI for request schemas and response examples.
-
-## Scoring and data limitations
-
-- The resume parser uses heuristics/regular expressions; extracted fields must be reviewed.
-- Missing inputs should remain missing and must not be interpreted as evidence against a candidate.
-- The example model and generated data do not establish predictive validity.
-- Criteria such as culture fit, employment stability, and salary motivation can encode unfair proxies. Do not use them as unreviewed filters.
-- Evaluate job-related criteria, accessibility, bias, privacy, and applicable employment law before any real-world use.
-- Keep a human reviewer responsible for decisions and provide a way to correct extracted candidate information.
-
-## Recommended engineering improvements
-
-- Restrict CORS to explicitly trusted frontend origins outside local development.
-- Add upload size limits and content-based file validation.
-- Separate route handlers, schemas, and application services.
-- Add unit and API integration tests.
-- Add model/data versioning and documented evaluation.
-- Add authentication and authorization before exposing endpoints publicly.
-- Add deployment configuration and structured audit logging.
+- Split the application into routers, schemas, services, and model modules.
+- Add tests for parsing, scoring, threshold decisions, and email flows.
+- Version model artifacts and document training data, evaluation, and reproducibility.
+- Add structured logging, deployment configuration, and API documentation.
 
 ## Author
 
